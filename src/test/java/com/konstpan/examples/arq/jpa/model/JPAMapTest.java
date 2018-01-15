@@ -4,8 +4,12 @@ import static org.junit.Assert.assertEquals;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 import javax.transaction.UserTransaction;
 
 import org.jboss.arquillian.container.test.api.Deployment;
@@ -30,6 +34,9 @@ public class JPAMapTest {
 
 	private static final String[] EMPLOYEES = { "John", "George", "Oscar" };
 
+	@PersistenceContext
+	EntityManagerFactory entityManagerFactory;
+	
 	@PersistenceContext
 	EntityManager em;
 
@@ -59,7 +66,7 @@ public class JPAMapTest {
 	}
 
 	@Test
-	public void shouldFindEmployee() {
+	public void shouldFindEmployeeByJPQL() {
 		// given
 		TypedQuery<Employee> query = em.createQuery("SELECT e FROM Employee e WHERE e.firstName = :firstName",
 				Employee.class);
@@ -70,6 +77,22 @@ public class JPAMapTest {
 
 		// then
 		assertEquals("John", emp.getFirstName());
+	}
+	
+	@Test
+	public void shouldFindEmployeeByCriteria() {
+		// given
+		CriteriaBuilder builder = entityManagerFactory.getCriteriaBuilder();
+		CriteriaQuery<Employee> criteria = builder.createQuery(Employee.class);
+		Root<Employee> root = criteria.from(Employee.class);
+		criteria.select(root);
+		criteria.where(builder.equal(root.get("firstName"), "George"));
+		
+		// when
+		Employee emp = em.createQuery(criteria).getSingleResult();
+		
+		// then
+		assertEquals("George", emp.getFirstName());
 	}
 
 }
