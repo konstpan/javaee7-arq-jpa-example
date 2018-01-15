@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -35,9 +34,6 @@ public class JPAMapTest {
 	private static final String[] EMPLOYEES = { "John", "George", "Oscar" };
 
 	@PersistenceContext
-	EntityManagerFactory entityManagerFactory;
-	
-	@PersistenceContext
 	EntityManager em;
 
 	@Inject
@@ -52,6 +48,7 @@ public class JPAMapTest {
 
 	@After
 	public void commitTransaction() throws Exception {
+		em.createQuery("DELETE FROM Employee").executeUpdate();
 		utx.commit();
 	}
 
@@ -78,19 +75,19 @@ public class JPAMapTest {
 		// then
 		assertEquals("John", emp.getFirstName());
 	}
-	
+
 	@Test
 	public void shouldFindEmployeeByCriteria() {
 		// given
-		CriteriaBuilder builder = entityManagerFactory.getCriteriaBuilder();
+		CriteriaBuilder builder = em.getCriteriaBuilder();
 		CriteriaQuery<Employee> criteria = builder.createQuery(Employee.class);
 		Root<Employee> root = criteria.from(Employee.class);
 		criteria.select(root);
 		criteria.where(builder.equal(root.get("firstName"), "George"));
-		
+
 		// when
 		Employee emp = em.createQuery(criteria).getSingleResult();
-		
+
 		// then
 		assertEquals("George", emp.getFirstName());
 	}
