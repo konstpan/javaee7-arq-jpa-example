@@ -2,6 +2,10 @@ package com.konstpan.examples.arq.jpa.model;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -18,6 +22,7 @@ import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -48,7 +53,14 @@ public class JPAMapTest {
 
 	@After
 	public void commitTransaction() throws Exception {
-		em.createQuery("DELETE FROM Employee").executeUpdate();
+		TypedQuery<Employee> query = em.createQuery("SELECT e FROM Employee e", Employee.class);
+
+		// code below is required because we cannot bulk delete with sql an
+		// ElementCollection!!!
+		for (Employee emp : query.getResultList()) {
+			em.remove(emp);
+		}
+
 		utx.commit();
 	}
 
@@ -57,6 +69,10 @@ public class JPAMapTest {
 		for (String firstName : EMPLOYEES) {
 			Employee emp = new Employee();
 			emp.setFirstName(firstName);
+
+			emp.getMetaData().put("key1", "value1");
+			emp.getMetaData().put("key2", "value2");
+
 			em.persist(emp);
 		}
 		utx.commit();
@@ -90,6 +106,26 @@ public class JPAMapTest {
 
 		// then
 		assertEquals("George", emp.getFirstName());
+	}
+	
+	@Test
+	@Ignore
+	public void shouldFindEmployeeByCriteriaAndMetadata() {
+		// given
+		Map<String, String> elementToSearchFor = new HashMap<>();
+		elementToSearchFor.put("key2", "value2");
+		
+		CriteriaBuilder builder = em.getCriteriaBuilder();
+		CriteriaQuery<Employee> criteria = builder.createQuery(Employee.class);
+		Root<Employee> root = criteria.from(Employee.class);
+		criteria.select(root);
+		criteria.where(builder.isMember(elementToSearchFor, root.get("metaData")));
+		
+		// when
+		List<Employee> emps = em.createQuery(criteria).getResultList();
+
+		// then
+		assertEquals(3, emps.size());
 	}
 
 }

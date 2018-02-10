@@ -1,5 +1,6 @@
 package com.konstpan.examples.arq.jpa.model;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.persistence.ElementCollection;
@@ -17,7 +18,7 @@ public class Employee {
 	private String lastName;
 
 	@ElementCollection
-	private Map<String, String> metaData;
+	private Map<String, String> metaData = new HashMap<>();
 
 	public Integer getId() {
 		return id;
